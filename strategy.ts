@@ -2,10 +2,20 @@
 //
 // Idea: most pump.fun coins die flat; a few run to completion (14.7x on the
 // curve). This bot buys small and early, only into launches that already show
-// organic buying — several distinct buyers, net SOL flowing in, price up from
-// create, creator not selling — and then lets winners run with a trailing stop
-// instead of taking a fast small profit. Losers are cut at -15% of cost. One
-// add on strength. Tiny probe round trips keep the 20-coin guardrail met.
+// organic buying — at least 8 distinct buyers, net SOL flowing in, price up
+// from create, creator not selling — and then gets out fast: take profit at
+// +25%, stop at -15%, never hold past 8 slots unless up 30%. Buys refuse any
+// fill whose price jumped more than 5% in the 2-slot latency (no chasing
+// spike tops). One add on strength. Tiny probe round trips keep the 20-coin
+// guardrail met. A drawdown brake stops new entries while equity is under
+// 9.2 SOL.
+//
+// Sweep history on the dev window (local engine port, mean over 4 failed-tx
+// keys): v1 selective entries + trail exits -0.81 SOL; fast exits -0.44;
+// 8+ buyers + 5-slot holds -0.03; final settings -0.02 SOL, 31% wins,
+// 0.3% max drawdown — still below hold-cash on dev, but the least-bad
+// measured shape: the market charges ~4.6% per round trip in fees on a
+// 0.01 SOL stake, so only the tightest, most selective scalps survive.
 //
 // Pure function of the hello/batch/orders/slot stream: no clock, no randomness,
 // no I/O, so the two graded executions produce byte-identical action logs.
@@ -73,30 +83,30 @@ export interface Params {
 }
 
 export const DEFAULT_PARAMS: Params = {
-  entryAgeMax: 40,
+  entryAgeMax: 10,
   minTrades: 3,
-  minBuyers: 2,
+  minBuyers: 8,
   maxBuyers: 12,
   minNetSol: 0.15,
-  minRunup: 0.03,
+  minRunup: 0.1,
   minRealSol: 0.3,
   maxRealSol: 40,
   maxCreatorBuy: 2.5,
   maxBuyerShare: 0.8,
   maxSeenSell: 0.5,
-  initialSol: 0.05,
+  initialSol: 0.01,
   minBuySol: 0.01,
   addSol: 0.05,
   addRunup: 0.4,
   addMinRealSol: 3,
-  buySlipBps: 1500,
+  buySlipBps: 500,
   stopLoss: 0.15,
   trailArm: 0.5,
   trail: 0.25,
-  tpAt: 2.0,
+  tpAt: 1.25,
   exitOnCreatorSell: true,
   bigSellSol: 1,
-  maxHold: 1500,
+  maxHold: 8,
   holdIfUp: 0.3,
   maxPositions: 5,
   maxExposureSol: 3,
